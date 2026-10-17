@@ -68,7 +68,7 @@ echo '{"model":{"display_name":"Opus 4.5"},"workspace":{"current_dir":"'"$PWD"'"
 
 ### Détails de fonctionnement
 
-- Fenêtre de contexte : 1M tokens si le nom du modèle contient `1M`, 200k sinon. Le pourcentage est calculé sur cette base, la taille du contexte étant celle de la dernière entrée du transcript (`input + cache_read + cache_creation`).cache_creation`).
+- Fenêtre de contexte : 1M tokens si le nom du modèle contient `1M`, 200k sinon. Le pourcentage est calculé sur cette base, la taille du contexte étant celle de la dernière entrée du transcript (`input + cache_read + cache_creation`).
 - Total journalier : calculé en parcourant `~/.claude/projects/*/*.jsonl` pour les entrées horodatées du jour. Le résultat est mis en cache 15 secondes dans `/tmp/cc-statusline-day-AAAA-MM-JJ` pour éviter de rescanner les transcripts à chaque rendu.
 - Les relectures de cache sont comptées séparément car elles gonflent fortement le total tout en étant facturées environ dix fois moins.
 
