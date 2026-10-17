@@ -1,0 +1,664 @@
+<title>Web Audit Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --paper:     #eef0ea;
+    --surface:   #f8f9f4;
+    --surface-2: #ffffff;
+    --ink:       #16211c;
+    --ink-soft:  #4c5750;
+    --muted:     #87907f;
+    --line:      #d7dbcd;
+    --line-strong: #b9c0ab;
+    --accent:       #0c7e60;   /* UI teal — "Human" family */
+    --accent-soft:  #e4efe8;
+    --amber:        #b5591a;   /* UI amber — "Claude Code" family */
+    --amber-soft:   #f6e9dc;
+    --critical:     #a7362a;
+    --critical-soft:#f3e0dc;
+    --chart-human:  #0f9a76;
+    --chart-ai:     #cf6a1e;
+    --focus:        #0c7e60;
+    --shadow: 0 1px 2px rgba(22,33,28,0.06), 0 8px 24px -16px rgba(22,33,28,0.25);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --paper:     #10140f;
+      --surface:   #171d18;
+      --surface-2: #1c231d;
+      --ink:       #f1efe4;
+      --ink-soft:  #c6c9ba;
+      --muted:     #8b9284;
+      --line:      #2b322a;
+      --line-strong:#3a4337;
+      --accent:       #3ecb9e;
+      --accent-soft:  #1c2d25;
+      --amber:        #f0963f;
+      --amber-soft:   #2e2318;
+      --critical:     #e2675f;
+      --critical-soft:#2e1d1a;
+      --chart-human:  #1ea17a;
+      --chart-ai:     #d4752a;
+      --focus:        #3ecb9e;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -16px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --paper:     #10140f;
+    --surface:   #171d18;
+    --surface-2: #1c231d;
+    --ink:       #f1efe4;
+    --ink-soft:  #c6c9ba;
+    --muted:     #8b9284;
+    --line:      #2b322a;
+    --line-strong:#3a4337;
+    --accent:       #3ecb9e;
+    --accent-soft:  #1c2d25;
+    --amber:        #f0963f;
+    --amber-soft:   #2e2318;
+    --critical:     #e2675f;
+    --critical-soft:#2e1d1a;
+    --chart-human:  #1ea17a;
+    --chart-ai:     #d4752a;
+    --focus:        #3ecb9e;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -16px rgba(0,0,0,0.6);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 1.6px) 0 0/22px 22px,
+      var(--paper);
+    color:var(--ink);
+    font-family:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size:15.5px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) body{ background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 1.6px); } }
+
+  h1,h2,h3,.eyebrow,.stamp{ font-family:"Big Shoulders Display", system-ui, sans-serif; letter-spacing:0.01em; }
+  .mono, .num, time, td.num, .tag-est{ font-family:"JetBrains Mono", ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; }
+  a{ color:var(--accent); }
+  :focus-visible{ outline:2px solid var(--focus); outline-offset:2px; border-radius:3px; }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+
+  .doc{ max-width:1180px; margin:0 auto; padding: 1.75rem 1.25rem 5rem; }
+
+  /* ---------- Masthead ---------- */
+  .masthead{
+    border:1px solid var(--line-strong);
+    border-radius:10px;
+    background:var(--surface);
+    box-shadow:var(--shadow);
+    padding:1.5rem 1.75rem;
+    margin-bottom:2rem;
+    position:relative;
+  }
+  .masthead::before{
+    content:"";
+    position:absolute; inset:7px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    pointer-events:none;
+  }
+  .eyebrow{
+    text-transform:uppercase;
+    font-size:0.78rem;
+    font-weight:700;
+    letter-spacing:0.14em;
+    color:var(--accent);
+  }
+  h1{
+    font-size:clamp(2rem, 4vw, 2.85rem);
+    font-weight:800;
+    margin:0.2rem 0 0.6rem;
+    text-wrap:balance;
+    line-height:1.02;
+  }
+  .masthead p.lede{
+    max-width:62ch;
+    color:var(--ink-soft);
+    margin:0 0 1.1rem;
+    font-size:1rem;
+  }
+  .fields{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(190px,1fr));
+    gap:0.9rem 1.5rem;
+    border-top:1px dashed var(--line-strong);
+    padding-top:1rem;
+  }
+  .field label{
+    display:block;
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--muted);
+    margin-bottom:0.3rem;
+  }
+  .field .fill{
+    border-bottom:1px solid var(--line-strong);
+    min-height:1.3rem;
+    font-size:0.92rem;
+    color:var(--ink-soft);
+    font-style:italic;
+  }
+
+  /* ---------- Layout: rail + main ---------- */
+  .layout{ display:grid; grid-template-columns:220px minmax(0,1fr); gap:2.2rem; align-items:start; }
+  @media (max-width:860px){ .layout{ grid-template-columns:1fr; } }
+
+  .rail{
+    position:sticky; top:1rem;
+    display:flex; flex-direction:column; gap:0.15rem;
+    border-left:2px solid var(--line);
+    padding-left:0.1rem;
+  }
+  @media (max-width:860px){
+    .rail{ position:sticky; top:0; z-index:5; flex-direction:row; overflow-x:auto;
+      background:var(--paper); border-left:none; border-bottom:1px solid var(--line-strong);
+      padding:0.6rem 0.1rem; margin:0 -1.25rem 1rem; padding-inline:1.25rem; gap:0.4rem; }
+  }
+  .rail a{
+    display:flex; align-items:baseline; gap:0.5rem;
+    padding:0.45rem 0.8rem;
+    color:var(--ink-soft);
+    text-decoration:none;
+    font-size:0.86rem;
+    border-radius:0 6px 6px 0;
+    white-space:nowrap;
+    border-left:2px solid transparent;
+    margin-left:-2px;
+  }
+  @media (max-width:860px){ .rail a{ border-radius:999px; border:1px solid var(--line-strong); border-left:1px solid var(--line-strong); margin-left:0; } }
+  .rail a .n{ font-family:"JetBrains Mono",monospace; color:var(--muted); font-size:0.78rem; }
+  .rail a.active{ color:var(--accent); font-weight:600; border-left-color:var(--accent); background:var(--accent-soft); }
+  @media (max-width:860px){ .rail a.active{ border-color:var(--accent); } }
+
+  main{ min-width:0; }
+  section{ margin-bottom:2.75rem; scroll-margin-top:1rem; }
+  section h2{
+    font-size:1.55rem; font-weight:700; margin:0 0 0.2rem;
+    display:flex; align-items:baseline; gap:0.6rem;
+  }
+  section h2 .idx{ color:var(--accent); font-family:"JetBrains Mono",monospace; font-size:1rem; font-weight:600; }
+  section .dek{ color:var(--ink-soft); max-width:68ch; margin:0.3rem 0 1.1rem; }
+  .divider{ border:none; border-top:1px solid var(--line); margin:0.5rem 0 1.4rem; }
+
+  /* ---------- Intro flow diagram ---------- */
+  .flow{ display:flex; flex-wrap:wrap; gap:0; align-items:stretch; margin:1.2rem 0; }
+  .flow-step{
+    flex:1 1 150px;
+    background:var(--surface);
+    border:1px solid var(--line-strong);
+    border-radius:8px;
+    padding:0.85rem 0.9rem;
+    position:relative;
+  }
+  .flow-step .k{ font-family:"JetBrains Mono",monospace; font-size:0.72rem; color:var(--accent); font-weight:700; }
+  .flow-step .t{ font-weight:600; font-size:0.9rem; margin-top:0.2rem; }
+  .flow-arrow{ display:flex; align-items:center; justify-content:center; width:1.6rem; color:var(--muted); font-size:1.1rem; flex:0 0 auto; }
+  @media (max-width:760px){ .flow{ flex-direction:column; } .flow-arrow{ width:auto; height:1.3rem; transform:rotate(90deg); } }
+
+  /* ---------- Task tables ---------- */
+  .table-wrap{ overflow-x:auto; border:1px solid var(--line-strong); border-radius:8px; background:var(--surface); }
+  table{ width:100%; border-collapse:collapse; font-size:0.89rem; min-width:620px; }
+  thead th{
+    text-align:left; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--muted); font-weight:700; padding:0.7rem 0.9rem; border-bottom:1px solid var(--line-strong);
+    background:var(--surface-2);
+  }
+  tbody td{ padding:0.65rem 0.9rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  tbody tr:last-child td{ border-bottom:none; }
+  td.id{ color:var(--muted); font-size:0.82rem; white-space:nowrap; }
+  td.num{ white-space:nowrap; font-weight:600; }
+  td.num.ai{ color:var(--chart-ai); }
+  td.num.human{ color:var(--chart-human); }
+  .na{ color:var(--muted); font-style:italic; font-weight:400; font-family:"Public Sans",sans-serif; font-size:0.84rem; }
+  tfoot td{ padding:0.7rem 0.9rem; font-weight:700; background:var(--surface-2); border-top:1px solid var(--line-strong); }
+
+  /* ---------- Stat tiles ---------- */
+  .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:0.9rem; margin:1.4rem 0; }
+  .stat{ border:1px solid var(--line-strong); border-radius:8px; padding:1rem 1.1rem; background:var(--surface); }
+  .stat .label{ font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }
+  .stat .value{ font-family:"JetBrains Mono",monospace; font-weight:700; font-size:1.9rem; margin-top:0.25rem; line-height:1; }
+  .stat.human .value{ color:var(--chart-human); }
+  .stat.ai .value{ color:var(--chart-ai); }
+  .stat .sub{ font-size:0.8rem; color:var(--ink-soft); margin-top:0.3rem; }
+
+  /* ---------- Chart ---------- */
+  .chart-card{ border:1px solid var(--line-strong); border-radius:8px; background:var(--surface); padding:1.3rem 1.3rem 0.8rem; }
+  .legend{ display:flex; gap:1.4rem; font-size:0.84rem; margin-bottom:1rem; flex-wrap:wrap; }
+  .legend .sw{ display:inline-flex; align-items:center; gap:0.45rem; }
+  .legend .sw i{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+  .chart-area{ display:flex; align-items:flex-end; gap:0; height:230px; border-bottom:1px solid var(--line-strong); position:relative; padding-left:2.4rem; overflow-x:auto; }
+  .gridlines{ position:absolute; left:2.4rem; right:0; top:0; bottom:0; pointer-events:none; }
+  .gridlines .gl{ position:absolute; left:0; right:0; border-top:1px dashed var(--line); }
+  .gridlines .gl .glabel{ position:absolute; left:-2.3rem; top:-0.6rem; font-size:0.68rem; color:var(--muted); font-family:"JetBrains Mono",monospace; width:2rem; text-align:right; }
+  .group{ flex:1 1 0; min-width:92px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:0.5rem; position:relative; }
+  .bars{ display:flex; align-items:flex-end; gap:5px; height:100%; }
+  .bar{ width:22px; border-radius:4px 4px 0 0; position:relative; cursor:pointer; }
+  .bar.human{ background:var(--chart-human); }
+  .bar.ai{ background:var(--chart-ai); }
+  .bar .val{ position:absolute; top:-1.3rem; left:50%; transform:translateX(-50%); font-family:"JetBrains Mono",monospace; font-size:0.68rem; color:var(--ink-soft); white-space:nowrap; }
+  .group .glabel-x{ font-size:0.74rem; color:var(--ink-soft); text-align:center; line-height:1.25; }
+  .group .glabel-x b{ display:block; color:var(--ink); font-size:0.78rem; }
+  .tooltip{
+    position:fixed; pointer-events:none; background:var(--ink); color:var(--paper);
+    font-size:0.76rem; padding:0.4rem 0.6rem; border-radius:5px; box-shadow:var(--shadow);
+    transform:translate(-50%,-115%); opacity:0; transition:opacity 0.1s; z-index:40; white-space:nowrap;
+  }
+  .tooltip.show{ opacity:1; }
+
+  /* ---------- Chips / tags ---------- */
+  .chip{ display:inline-flex; align-items:center; gap:0.35rem; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:0.22rem 0.55rem; border-radius:999px; }
+  .chip.qw{ background:var(--amber-soft); color:var(--amber); }
+  .chip.mt{ background:var(--accent-soft); color:var(--accent); }
+  .chip.rf{ background:var(--critical-soft); color:var(--critical); }
+
+  /* ---------- Roadmap bands ---------- */
+  .band{ border:1px solid var(--line-strong); border-radius:8px; background:var(--surface); padding:1rem 1.2rem; margin-bottom:0.9rem; }
+  .band-head{ display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:0.7rem; flex-wrap:wrap; }
+  .band-head h3{ margin:0; font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:0.6rem; }
+  .band-head .total{ font-family:"JetBrains Mono",monospace; font-size:0.84rem; color:var(--ink-soft); }
+  .band ul{ list-style:none; margin:0; padding:0; display:grid; gap:0.45rem; }
+  .band li{ display:flex; justify-content:space-between; gap:1rem; padding:0.4rem 0; border-top:1px dashed var(--line); font-size:0.9rem; }
+  .band li:first-child{ border-top:none; }
+  .band li .d{ color:var(--ink-soft); }
+  .band li .e{ font-family:"JetBrains Mono",monospace; color:var(--muted); white-space:nowrap; }
+  .example-note{ font-size:0.78rem; color:var(--muted); font-style:italic; margin-top:0.4rem; }
+
+  /* ---------- Checklist ---------- */
+  .checklist-phase{ margin-bottom:1.1rem; }
+  .checklist-phase h4{ font-size:0.82rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); margin:0 0 0.5rem; }
+  .check-row{ display:flex; align-items:flex-start; gap:0.75rem; padding:0.55rem 0.2rem; border-bottom:1px solid var(--line); }
+  .check-row:last-child{ border-bottom:none; }
+  .check-row input[type="checkbox"]{ width:18px; height:18px; margin-top:0.15rem; accent-color:var(--accent); flex:0 0 auto; }
+  .check-row .txt{ flex:1; font-size:0.92rem; }
+  .check-row .txt.done{ color:var(--muted); text-decoration:line-through; }
+  .check-row .est{ font-family:"JetBrains Mono",monospace; font-size:0.78rem; color:var(--muted); white-space:nowrap; flex:0 0 auto; }
+  .progress-bar{ height:7px; border-radius:4px; background:var(--line); overflow:hidden; margin:0.6rem 0 1.2rem; }
+  .progress-bar > div{ height:100%; background:var(--accent); width:0%; }
+  .progress-label{ display:flex; justify-content:space-between; font-size:0.8rem; color:var(--ink-soft); font-family:"JetBrains Mono",monospace; }
+
+  footer{ border-top:1px solid var(--line-strong); padding-top:1.3rem; color:var(--ink-soft); font-size:0.85rem; }
+  footer .foot-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.3rem; }
+  footer h4{ font-size:0.78rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); margin:0 0 0.4rem; }
+</style>
+
+<div class="doc" id="top">
+
+  <div class="masthead">
+    <div class="eyebrow">Methodology &amp; estimates — man-days / Claude Code</div>
+    <h1>Web Audit Grid</h1>
+    <p class="lede">A five-phase framework to scope, conduct and present a website audit (technical, SEO, UX/UI, security) — with, for every task, a man-day estimate and the equivalent time when it is carried out with Claude Code.</p>
+    <div class="fields">
+      <div class="field"><label>Site type</label><div class="fill">showcase / e-commerce / SaaS —</div></div>
+      <div class="field"><label>Audit trigger</label><div class="fill">traffic drop / redesign / slowness / security —</div></div>
+      <div class="field"><label>Scope</label><div class="fill">full or targeted —</div></div>
+      <div class="field"><label>Source ticket</label><div class="fill">Jira / Trello ref. —</div></div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <nav class="rail" id="rail">
+      <a href="#intro"><span class="n">00</span> Overview</a>
+      <a href="#phase-1"><span class="n">01</span> Scoping</a>
+      <a href="#phase-2"><span class="n">02</span> Data collection</a>
+      <a href="#phase-3"><span class="n">03</span> Diagnosis</a>
+      <a href="#phase-4"><span class="n">04</span> Synthesis</a>
+      <a href="#phase-5"><span class="n">05</span> Action plan</a>
+      <a href="#comparison"><span class="n">06</span> Comparison</a>
+      <a href="#roadmap"><span class="n">07</span> Roadmap</a>
+      <a href="#checklist"><span class="n">08</span> Remaining work</a>
+    </nav>
+
+    <main>
+
+      <section id="intro">
+        <h2><span class="idx">00</span> The 5 steps, in order</h2>
+        <p class="dek">Each phase feeds the next: you don't diagnose before scoping, and you don't decide before cross-checking findings. The grid below doubles as the table of contents for the whole document.</p>
+        <div class="flow">
+          <div class="flow-step"><div class="k">01</div><div class="t">Scoping &amp; objectives</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="k">02</div><div class="t">Data collection</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="k">03</div><div class="t">Technical &amp; thematic diagnosis</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="k">04</div><div class="t">Synthesis &amp; cross-analysis</div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="k">05</div><div class="t">Action plan &amp; presentation</div></div>
+        </div>
+      </section>
+
+      <section id="phase-1">
+        <h2><span class="idx">01</span> Scoping and objectives</h2>
+        <p class="dek">Clarify why the audit is needed (traffic, redesign, slowness, conversion, security) and its scope — full, or targeted on one axis (SEO, performance, accessibility, e-commerce, UX).</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Task</th><th>Description</th><th>Man-days</th><th>Claude Code*</th></tr></thead>
+            <tbody>
+              <tr><td class="id">T1.1</td><td>Kick-off meeting: trigger, priorities, stakeholders</td><td class="num human">0.5 d</td><td class="num ai">0.5 h <span class="na">(prep material)</span></td></tr>
+              <tr><td class="id">T1.2</td><td>Define the scope — full or targeted audit</td><td class="num human">0.25 d</td><td class="num ai">0.5 h</td></tr>
+              <tr><td class="id">T1.3</td><td>Write the scoping note and milestones</td><td class="num human">0.25 d</td><td class="num ai">1 h</td></tr>
+            </tbody>
+            <tfoot><tr><td>Subtotal</td><td></td><td class="num">1.0 d</td><td class="num">2 h</td></tr></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <section id="phase-2">
+        <h2><span class="idx">02</span> Data collection</h2>
+        <p class="dek">Crawling, search consoles, audience and behavioural analytics tools; inventory of pages, content, plugins, code and data flows.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Task</th><th>Description</th><th>Man-days</th><th>Claude Code*</th></tr></thead>
+            <tbody>
+              <tr><td class="id">T2.1</td><td>Full site crawl (setup and run)</td><td class="num human">0.5 d</td><td class="num ai">1.5 h</td></tr>
+              <tr><td class="id">T2.2</td><td>Export and review Search Console / Analytics</td><td class="num human">0.5 d</td><td class="num ai">1 h</td></tr>
+              <tr><td class="id">T2.3</td><td>Heatmap / session recording analysis</td><td class="num human">0.5 d</td><td class="na">human — third-party tool access required</td></tr>
+              <tr><td class="id">T2.4</td><td>Inventory of pages, content, plugins</td><td class="num human">0.5 d</td><td class="num ai">1 h</td></tr>
+              <tr><td class="id">T2.5</td><td>Inventory of code, dependencies, repository</td><td class="num human">0.5 d</td><td class="num ai">0.75 h</td></tr>
+            </tbody>
+            <tfoot><tr><td>Subtotal</td><td></td><td class="num">2.5 d</td><td class="num">4.25 h</td></tr></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <section id="phase-3">
+        <h2><span class="idx">03</span> Technical and thematic diagnosis</h2>
+        <p class="dek">The core of the audit: technical, SEO, UX/UI and security. This is the heaviest phase in man-days, and the one where a tool-equipped agent (bash, web fetch) saves the most time on automatable checks.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Task</th><th>Description</th><th>Man-days</th><th>Claude Code*</th></tr></thead>
+            <tbody>
+              <tr><td class="id">T3.1</td><td>Technical audit — HTTP errors, redirects, robots.txt, XML sitemap, mobile, speed</td><td class="num human">1.5 d</td><td class="num ai">3 h</td></tr>
+              <tr><td class="id">T3.2</td><td>SEO audit — title/H1 tags, internal linking, semantics, backlinks</td><td class="num human">1.5 d</td><td class="num ai">3 h</td></tr>
+              <tr><td class="id">T3.3</td><td>UX/UI audit — navigation, readability, conversion funnels, accessibility</td><td class="num human">1.0 d</td><td class="num ai">2 h</td></tr>
+              <tr><td class="id">T3.4</td><td>Security audit — SSL certificate, CMS/plugin updates, HTTP headers</td><td class="num human">1.0 d</td><td class="num ai">2 h</td></tr>
+            </tbody>
+            <tfoot><tr><td>Subtotal</td><td></td><td class="num">5.0 d</td><td class="num">10 h</td></tr></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <section id="phase-4">
+        <h2><span class="idx">04</span> Synthesis and cross-analysis</h2>
+        <p class="dek">Separate symptoms from root causes, then assess the impact of each issue on business objectives.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Task</th><th>Description</th><th>Man-days</th><th>Claude Code*</th></tr></thead>
+            <tbody>
+              <tr><td class="id">T4.1</td><td>Group findings, identify root causes</td><td class="num human">0.75 d</td><td class="num ai">1.5 h</td></tr>
+              <tr><td class="id">T4.2</td><td>Assess the business impact of each issue</td><td class="num human">0.5 d</td><td class="num ai">1 h</td></tr>
+            </tbody>
+            <tfoot><tr><td>Subtotal</td><td></td><td class="num">1.25 d</td><td class="num">2.5 h</td></tr></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <section id="phase-5">
+        <h2><span class="idx">05</span> Action plan and recommendations</h2>
+        <p class="dek">Prioritised roadmap — quick wins, mid-term projects, major overhaul — then presentation to the client or management.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Task</th><th>Description</th><th>Man-days</th><th>Claude Code*</th></tr></thead>
+            <tbody>
+              <tr><td class="id">T5.1</td><td>Build the prioritised roadmap</td><td class="num human">0.75 d</td><td class="num ai">1.5 h</td></tr>
+              <tr><td class="id">T5.2</td><td>Write the detailed audit report</td><td class="num human">1.5 d</td><td class="num ai">3 h</td></tr>
+              <tr><td class="id">T5.3</td><td>Prepare the presentation deck</td><td class="num human">0.5 d</td><td class="num ai">1 h</td></tr>
+              <tr><td class="id">T5.4</td><td>Present findings to the client</td><td class="num human">0.5 d</td><td class="na">human only</td></tr>
+            </tbody>
+            <tfoot><tr><td>Subtotal</td><td></td><td class="num">3.25 d</td><td class="num">5.5 h</td></tr></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <section id="comparison">
+        <h2><span class="idx">06</span> Comparison: man-days vs Claude Code</h2>
+        <p class="dek">Total effort per phase, converted to hours (1 d = 7 h), against the estimated time with a tool-equipped agent. Strictly human tasks (meetings, third-party tool access, oral presentation) are excluded from Claude Code time.</p>
+
+        <div class="chart-card">
+          <div class="legend">
+            <span class="sw"><i style="background:var(--chart-human)"></i>Human (hours)</span>
+            <span class="sw"><i style="background:var(--chart-ai)"></i>Claude Code (hours)</span>
+          </div>
+          <div class="chart-area" id="chart">
+            <div class="gridlines" id="gridlines"></div>
+            <!-- groups injected by script -->
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat human"><div class="label">Total man-days</div><div class="value">13.0 d</div><div class="sub">≈ 91 h at 7 h / day</div></div>
+          <div class="stat ai"><div class="label">Total Claude Code</div><div class="value">24.25 h</div><div class="sub">≈ 3.5 d equivalent</div></div>
+          <div class="stat"><div class="label">Estimated time saving</div><div class="value">×3.7</div><div class="sub">on automatable tasks</div></div>
+        </div>
+      </section>
+
+      <section id="roadmap">
+        <h2><span class="idx">07</span> Delivery roadmap</h2>
+        <p class="dek">Coming out of phase 5, the roadmap sorts the audit's <strong>actual findings</strong> (not the audit tasks themselves) into three horizons. The lines below are examples to replace with your own findings.</p>
+
+        <div class="band">
+          <div class="band-head"><h3><span class="chip qw">Quick wins</span> Fast, high-impact actions</h3><div class="total">≈ 2 d total</div></div>
+          <ul>
+            <li><span class="d">Fix duplicate title / meta tags</span><span class="e">0.5 d</span></li>
+            <li><span class="d">Compress oversized images</span><span class="e">0.5 d</span></li>
+            <li><span class="d">301-redirect high-traffic 404s</span><span class="e">0.5 d</span></li>
+            <li><span class="d">Update the CMS and outdated plugins</span><span class="e">0.5 d</span></li>
+          </ul>
+          <div class="example-note">Examples — replace with findings from the diagnosis (phase 03)</div>
+        </div>
+
+        <div class="band">
+          <div class="band-head"><h3><span class="chip mt">Mid-term</span> 2 to 6 week projects</h3><div class="total">≈ 12 d total</div></div>
+          <ul>
+            <li><span class="d">Rework internal linking</span><span class="e">3 d</span></li>
+            <li><span class="d">Improve load times (LCP, CLS)</span><span class="e">4 d</span></li>
+            <li><span class="d">Rework the conversion funnel and A/B test it</span><span class="e">5 d</span></li>
+          </ul>
+          <div class="example-note">Examples — replace with findings from the diagnosis (phase 03)</div>
+        </div>
+
+        <div class="band">
+          <div class="band-head"><h3><span class="chip rf">Major overhaul</span> Structural projects (quarter+)</h3><div class="total">≈ 40 d total</div></div>
+          <ul>
+            <li><span class="d">Redesign the information architecture</span><span class="e">15 d</span></li>
+            <li><span class="d">Migrate to a more secure, faster CMS</span><span class="e">25 d</span></li>
+          </ul>
+          <div class="example-note">Examples — replace with findings from the diagnosis (phase 03)</div>
+        </div>
+      </section>
+
+      <section id="checklist">
+        <h2><span class="idx">08</span> Remaining work</h2>
+        <p class="dek">Consolidated checklist of the 14 tasks across the 5 phases — tick them off as the audit progresses. State is saved in this browser.</p>
+        <div class="progress-label"><span id="progress-text">0 / 14 tasks</span><span id="progress-pct">0 %</span></div>
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <div id="checklist-root"></div>
+      </section>
+
+      <footer>
+        <div class="foot-grid">
+          <div>
+            <h4>Assumptions — Claude Code time</h4>
+            <p style="margin:0;">Estimates at "medium" effort, with an agent that has bash access, file/repository reading and web fetch. Excludes tasks requiring a human decision, a meeting, a third-party tool licence (heatmaps, premium backlink tools) or subjective design judgement — human review is still required before the report is shared.</p>
+          </div>
+          <div>
+            <h4>Units</h4>
+            <p style="margin:0;">1 man-day = 7 hours. Totals in section 06 are rounded to the nearest quarter hour.</p>
+          </div>
+          <div>
+            <h4>How to use this grid</h4>
+            <p style="margin:0;">Duplicate this template for each audit ticket, fill in the header fields, then replace the roadmap examples with the actual findings from the diagnosis.</p>
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function(){
+  // ---------- Chart ----------
+  var data = [
+    {label:"Scoping", idx:"01", human:7,    ai:2},
+    {label:"Collection", idx:"02", human:17.5, ai:4.25},
+    {label:"Diagnosis", idx:"03", human:35,  ai:10},
+    {label:"Synthesis", idx:"04", human:8.75, ai:2.5},
+    {label:"Action plan", idx:"05", human:22.75, ai:5.5}
+  ];
+  var max = 35, chartH = 230;
+  var chart = document.getElementById("chart");
+  var gridWrap = document.getElementById("gridlines");
+  [0,10,20,30].forEach(function(v){
+    var gl = document.createElement("div");
+    gl.className = "gl";
+    gl.style.bottom = (v/max*chartH) + "px";
+    var lab = document.createElement("span");
+    lab.className = "glabel";
+    lab.textContent = v + "h";
+    gl.appendChild(lab);
+    gridWrap.appendChild(gl);
+  });
+  var tooltip = document.getElementById("tooltip");
+  function fmt(h){ return (h % 1 === 0 ? h : h.toFixed(2).replace(/0+$/,'').replace(/\.$/,'')) + " h"; }
+  data.forEach(function(d){
+    var group = document.createElement("div");
+    group.className = "group";
+    var bars = document.createElement("div");
+    bars.className = "bars";
+
+    function makeBar(cls, val, name){
+      var bar = document.createElement("div");
+      bar.className = "bar " + cls;
+      bar.style.height = Math.max(2, val/max*chartH) + "px";
+      var v = document.createElement("span");
+      v.className = "val";
+      v.textContent = fmt(val);
+      bar.appendChild(v);
+      bar.addEventListener("mouseenter", function(e){
+        tooltip.textContent = d.label + " — " + name + ": " + fmt(val);
+        tooltip.classList.add("show");
+      });
+      bar.addEventListener("mousemove", function(e){
+        tooltip.style.left = e.clientX + "px";
+        tooltip.style.top = e.clientY + "px";
+      });
+      bar.addEventListener("mouseleave", function(){ tooltip.classList.remove("show"); });
+      return bar;
+    }
+    bars.appendChild(makeBar("human", d.human, "Human"));
+    bars.appendChild(makeBar("ai", d.ai, "Claude Code"));
+    group.appendChild(bars);
+    var xl = document.createElement("div");
+    xl.className = "glabel-x";
+    xl.innerHTML = "<b>" + d.idx + "</b>" + d.label;
+    group.appendChild(xl);
+    chart.appendChild(group);
+  });
+
+  // ---------- Scrollspy ----------
+  var links = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute("href")); });
+  function onScroll(){
+    var y = window.scrollY + 120;
+    var activeIdx = 0;
+    sections.forEach(function(s, i){ if (s && s.offsetTop <= y) activeIdx = i; });
+    links.forEach(function(a, i){ a.classList.toggle("active", i === activeIdx); });
+  }
+  document.addEventListener("scroll", onScroll, {passive:true});
+  onScroll();
+
+  // ---------- Checklist ----------
+  var tasks = [
+    {phase:"01 — Scoping", items:[
+      ["T1.1","Kick-off meeting: trigger, priorities, stakeholders","0.5 d · 0.5 h"],
+      ["T1.2","Define the scope — full or targeted","0.25 d · 0.5 h"],
+      ["T1.3","Write the scoping note and milestones","0.25 d · 1 h"]
+    ]},
+    {phase:"02 — Collection", items:[
+      ["T2.1","Full site crawl","0.5 d · 1.5 h"],
+      ["T2.2","Search Console / Analytics export","0.5 d · 1 h"],
+      ["T2.3","Heatmap / session analysis","0.5 d · human"],
+      ["T2.4","Inventory of pages, content, plugins","0.5 d · 1 h"],
+      ["T2.5","Inventory of code, dependencies, repository","0.5 d · 0.75 h"]
+    ]},
+    {phase:"03 — Diagnosis", items:[
+      ["T3.1","Technical audit (HTTP, robots.txt, sitemap, speed)","1.5 d · 3 h"],
+      ["T3.2","SEO audit (tags, linking, backlinks)","1.5 d · 3 h"],
+      ["T3.3","UX/UI audit (navigation, accessibility)","1.0 d · 2 h"],
+      ["T3.4","Security audit (SSL, CMS, HTTP headers)","1.0 d · 2 h"]
+    ]},
+    {phase:"04 — Synthesis", items:[
+      ["T4.1","Group findings, root causes","0.75 d · 1.5 h"],
+      ["T4.2","Business impact assessment","0.5 d · 1 h"]
+    ]},
+    {phase:"05 — Action plan", items:[
+      ["T5.1","Prioritised roadmap","0.75 d · 1.5 h"],
+      ["T5.2","Write the audit report","1.5 d · 3 h"],
+      ["T5.3","Presentation deck","0.5 d · 1 h"],
+      ["T5.4","Oral presentation","0.5 d · human"]
+    ]}
+  ];
+
+  var STORE_KEY = "audit-web-grid.checklist";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch(e) { state = {}; }
+
+  var root = document.getElementById("checklist-root");
+  var allIds = [];
+  tasks.forEach(function(group){
+    var wrap = document.createElement("div");
+    wrap.className = "checklist-phase";
+    var h4 = document.createElement("h4");
+    h4.textContent = group.phase;
+    wrap.appendChild(h4);
+    group.items.forEach(function(item){
+      var id = item[0];
+      allIds.push(id);
+      var row = document.createElement("label");
+      row.className = "check-row";
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!state[id];
+      cb.addEventListener("change", function(){
+        state[id] = cb.checked;
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e) {}
+        txt.classList.toggle("done", cb.checked);
+        updateProgress();
+      });
+      var txt = document.createElement("span");
+      txt.className = "txt" + (cb.checked ? " done" : "");
+      txt.textContent = id + " — " + item[1];
+      var est = document.createElement("span");
+      est.className = "est";
+      est.textContent = item[2];
+      row.appendChild(cb);
+      row.appendChild(txt);
+      row.appendChild(est);
+      wrap.appendChild(row);
+    });
+    root.appendChild(wrap);
+  });
+
+  function updateProgress(){
+    var done = allIds.filter(function(id){ return !!state[id]; }).length;
+    var pct = Math.round(done / allIds.length * 100);
+    document.getElementById("progress-text").textContent = done + " / " + allIds.length + " tasks";
+    document.getElementById("progress-pct").textContent = pct + " %";
+    document.getElementById("progress-fill").style.width = pct + "%";
+  }
+  updateProgress();
+})();
+</script>
