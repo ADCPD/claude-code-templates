@@ -73,3 +73,45 @@ echo '{"model":{"display_name":"Opus 4.5"},"workspace":{"current_dir":"'"$PWD"'"
 - Les relectures de cache sont comptées séparément car elles gonflent fortement le total tout en étant facturées environ dix fois moins.
 
 
+## Audit Web
+
+Skill qui réalise l'audit d'un projet web (technique, SEO, UX/UI, sécurité) à partir d'un ticket Jira, d'une carte Trello ou d'un simple descriptif. Il produit un artifact de présentation qui détaille chaque étape, ce qui reste à faire, et une estimation tâche par tâche en jours-hommes et en temps Claude Code.
+
+### Utilisation
+
+```
+/audit-web PROJ-123
+/audit-web https://trello.com/c/xxxx
+/audit-web "Site e-commerce en baisse de trafic depuis la refonte"
+```
+
+### Méthodologie
+
+| Étape | Contenu | Référence |
+|---|---|---|
+| 01 Cadrage | Motif de l'audit, périmètre global ou ciblé | 1 j |
+| 02 Collecte | Crawl, Search Console / Analytics, inventaire pages, code, dépendances | 2,5 j |
+| 03 Diagnostic | Technique, SEO, UX/UI, sécurité | 5 j |
+| 04 Synthèse | Causes profondes, impact business | 1,25 j |
+| 05 Plan d'action | Feuille de route (quick wins / moyen terme / refonte), rapport, restitution | 3,25 j |
+
+Soit **13 jours-hommes** de référence, contre environ **24 h** avec Claude Code (hors tâches humaines : réunions, heatmaps, restitution orale). Le skill adapte ces tâches et recalcule les totaux selon le ticket.
+
+### Contenu
+
+| Fichier | Rôle |
+|---|---|
+| `skills/audit-web/SKILL.md` | Déroulé du skill |
+| `skills/audit-web/references/methodology.md` | Les 5 étapes, tâches T1.1 → T5.4 et estimations de référence |
+| `skills/audit-web/assets/audit-web-grid.html` | Gabarit de l'artifact (clair / sombre) |
+
+### Installation
+
+```bash
+cp -r skills/audit-web ~/.claude/skills/
+```
+
+Puis relancer Claude Code. L'audit est rédigé dans la langue du ticket.
+
+
+---
